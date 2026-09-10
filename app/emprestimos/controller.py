@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Depends
 
+from ..seguranca import get_current_user
 from .dependencias import obter_service
 from .schemas import EmprestimoEntrada, EmprestimoPublico
 from .service import EmprestimoService
 
-router = APIRouter(prefix="/emprestimos", tags=["Emprestimos"])
+# A mesma porta de livros: ninguem empresta sem se apresentar.
+router = APIRouter(
+    prefix="/emprestimos",
+    tags=["Emprestimos"],
+    dependencies=[Depends(get_current_user)],
+)
 
 # Nenhum `try` aqui: as recusas do Service viram HTTP no tradutor registrado
 # no main.py, uma vez para todas as rotas (encontro 6 de P3).

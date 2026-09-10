@@ -1,16 +1,20 @@
 [project]
 name = "sistema-biblioteca"
-version = "0.4.0"
+version = "0.5.0"
 description = "Biblioteca do Campus - o sistema das disciplinas Programacao III e Programacao para Web III"
 requires-python = ">=3.11"
 
 dependencies = [
     "fastapi (>=0.115)",
     "uvicorn (>=0.30)",
-    "pydantic (>=2.7)",
+    "pydantic[email] (>=2.7)",
     "sqlalchemy (>=2.0)",
     "python-dotenv (>=1.0)",
     "psycopg[binary] (>=3.1)",
+    "alembic (>=1.13)",
+    "pyjwt (>=2.8)",
+    "bcrypt (>=4.0)",
+    "python-multipart (>=0.0.9)",
 ]
 
 [tool.poetry.group.dev.dependencies]

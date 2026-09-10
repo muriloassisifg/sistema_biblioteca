@@ -2,10 +2,17 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..seguranca import get_current_user
 from . import service
 from .schemas import LivroAtualizar, LivroCriar, LivroPublico
 
-router = APIRouter(prefix="/livros", tags=["Livros"])
+# A porta trancada: UMA linha, e todas as rotas de livros passam a exigir um
+# token valido. Sem ele, o FastAPI responde 401 antes de a rota rodar.
+router = APIRouter(
+    prefix="/livros",
+    tags=["Livros"],
+    dependencies=[Depends(get_current_user)],
+)
 
 # Nenhum `if` de regra e nenhum `try` aqui: as recusas do Service viram
 # HTTP no tradutor registrado no main.py, uma vez para todas as rotas.
