@@ -25,8 +25,11 @@ poetry run alembic upgrade head
 poetry run uvicorn app.main:app --reload
 ```
 
-O `upgrade head` cria as tabelas: rode uma vez ao clonar, e de novo a cada
-migração nova. Não há mais `create_all`. Ao subir, a API põe os cinco livros
+O `upgrade head` cria as tabelas a partir das migrações — não há
+`create_all`. A API roda esse mesmo comando ao subir, então num clone novo
+basta o uvicorn: o banco nasce sozinho, já na última migração. O comando no
+terminal fica para quando você quiser ver o Alembic trabalhando (ou rodar
+uma migração sem subir a API). Ao subir, a API também põe os cinco livros
 iniciais se a biblioteca estiver vazia. Depois abra
 <http://127.0.0.1:8000/docs>.
 

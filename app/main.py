@@ -1,10 +1,13 @@
+import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import inspect
 
-from .database import SessionLocal, engine
+from .database import SessionLocal
 from .emprestimos import controller as emprestimos_controller
 from .emprestimos.erros import ErroDeEmprestimo
 from .emprestimos.erros import LivroNaoEncontrado as LivroNaoEncontradoNoEmprestimo
@@ -14,22 +17,42 @@ from .livros.erros import ErroDeLivro, LivroNaoEncontrado
 from .usuarios import controller as usuarios_controller
 from .usuarios.erros import CredenciaisInvalidas, ErroDeUsuario
 
-# Nao ha' mais create_all aqui. Quem cria -- e MUDA -- tabelas e' o Alembic:
+# A pasta do projeto: onde moram alembic.ini e alembic/.
+RAIZ = Path(__file__).resolve().parent.parent
+
+# Nao ha' create_all aqui. Quem cria -- e MUDA -- tabelas e' o Alembic:
 #     poetry run alembic upgrade head
-# Uma vez ao clonar o projeto, e de novo a cada migracao nova.
+# Uma vez ao clonar o projeto, e de novo a cada migracao nova. Para ninguem
+# subir a API com o banco vazio e tomar "no such table", a aplicacao roda
+# esse mesmo comando ao subir (a funcao `migrar`, logo abaixo).
+
+
+def migrar():
+    """O `alembic upgrade head`, chamado pelo codigo.
+
+    Num clone novo as tabelas nascem daqui -- e com a tabela alembic_version
+    marcando a versao, o que o create_all nao faria. Num banco ja' migrado
+    nao faz nada; quando chega uma migracao nova, aplica. E' exatamente o que
+    o comando no terminal faz. Sem passar o alembic.ini, de proposito: o
+    env.py ja' sabe a URL do banco (pelo .env), e a configuracao de log do
+    .ini calaria os logs do uvicorn.
+    """
+    cfg = Config()
+    cfg.set_main_option("script_location", str(RAIZ / "alembic"))
+    command.upgrade(cfg, "head")
+    logging.getLogger("uvicorn.error").info("Banco na ultima migracao (alembic upgrade head).")
 
 
 @asynccontextmanager
 async def ciclo_de_vida(app: FastAPI):
+    migrar()
     # So' para a aula: os cinco livros iniciais entram quando a aplicacao
-    # sobe -- se as tabelas ja' existirem. Sem o upgrade head, nada e' criado
-    # por baixo dos panos: a API sobe vazia e o /docs avisa ao primeiro pedido.
-    if inspect(engine).has_table("livros"):
-        db = SessionLocal()
-        try:
-            semear_acervo_inicial(db)
-        finally:
-            db.close()
+    # sobe, se a biblioteca estiver vazia.
+    db = SessionLocal()
+    try:
+        semear_acervo_inicial(db)
+    finally:
+        db.close()
     yield
 
 
