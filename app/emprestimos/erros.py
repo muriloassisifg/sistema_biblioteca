@@ -11,4 +11,8 @@ class LivroIndisponivel(ErroDeEmprestimo):
 
 
 class LimiteDeEmprestimosAtingido(ErroDeEmprestimo):
-    """O leitor ja esta com o maximo de livros permitido."""
+    """O leitor ja esta com o maximo de livros permitido para o tipo dele."""
+
+
+class TipoDeLeitorDesconhecido(ErroDeEmprestimo):
+    """Pediram um tipo de leitor que a biblioteca nao conhece."""

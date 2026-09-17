@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .database import SessionLocal
 from .emprestimos import controller as emprestimos_controller
-from .emprestimos.erros import ErroDeEmprestimo
+from .emprestimos.erros import ErroDeEmprestimo, TipoDeLeitorDesconhecido
 from .emprestimos.erros import LivroNaoEncontrado as LivroNaoEncontradoNoEmprestimo
 from .livros import controller as livros_controller
 from .livros.acervo import semear_acervo_inicial
@@ -68,6 +68,7 @@ app.include_router(emprestimos_controller.router)
 STATUS = {
     LivroNaoEncontrado: 404,
     LivroNaoEncontradoNoEmprestimo: 404,
+    TipoDeLeitorDesconhecido: 422,   # como os 422 do schema: o pedido e' que nao serve
     CredenciaisInvalidas: 401,
 }
 

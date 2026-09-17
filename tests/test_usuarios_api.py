@@ -45,7 +45,7 @@ def test_a_porta_esta_trancada(anonimo):
     # sem token, nenhuma rota de livros ou emprestimos roda
     assert anonimo.get("/livros/").status_code == 401
     assert anonimo.post("/livros/", json={"titulo": "Quincas Borba", "ano": 1891}).status_code == 401
-    assert anonimo.post("/emprestimos/", json={"livro_id": 1, "leitor_id": 42}).status_code == 401
+    assert anonimo.post("/emprestimos/", json={"livro_id": 1, "leitor_id": 42, "tipo_leitor": "aluno"}).status_code == 401
     assert anonimo.get("/usuarios/eu").status_code == 401
 
 

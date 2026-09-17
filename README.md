@@ -27,10 +27,11 @@ poetry run uvicorn app.main:app --reload
 
 O `upgrade head` cria as tabelas a partir das migrações — não há
 `create_all`. A API roda esse mesmo comando ao subir, então num clone novo
-basta o uvicorn: o banco nasce sozinho, já na última migração. O comando no
-terminal fica para quando você quiser ver o Alembic trabalhando (ou rodar
-uma migração sem subir a API). Ao subir, a API também põe os cinco livros
-iniciais se a biblioteca estiver vazia. Depois abra
+basta o uvicorn: o banco nasce sozinho, já na última migração. E quem já
+tinha um `biblioteca.db` não apaga nada: ao subir, a API aplica as migrações
+que faltam. O comando no terminal fica para quando você quiser ver o Alembic
+trabalhando (ou rodar uma migração sem subir a API). Ao subir, a API também
+põe os cinco livros iniciais se a biblioteca estiver vazia. Depois abra
 <http://127.0.0.1:8000/docs>.
 
 Sem Poetry: `pip install fastapi uvicorn "pydantic[email]" sqlalchemy
@@ -71,13 +72,29 @@ código rodar; `404` é do protocolo; `401` é do porteiro.
 
 ### O empréstimo — P3 (com o crachá)
 
+Cada tipo de leitor tem a sua regra — é o Strategy do encontro 7:
+
+| tipo de leitor | livros ao mesmo tempo | prazo |
+|---|---|---|
+| `aluno` | 3 | 14 dias |
+| `professor` | 5 | 30 dias — 60 em julho e dezembro |
+| `servidor` | 4 | 21 dias |
+| `visitante` | 1 | 7 dias |
+
 | pedido | resposta |
 |---|---|
-| `POST /emprestimos/ {"livro_id": 1, "leitor_id": 42}` | `201` |
+| `POST /emprestimos/ {"livro_id": 1, "leitor_id": 42, "tipo_leitor": "aluno"}` | `201` — `devolver_ate` daqui a 14 dias |
 | o mesmo pedido de novo | `409` — já emprestado |
-| `{"livro_id": 99, "leitor_id": 42}` | `404` — não está no acervo |
-| `{"livro_id": 2, "leitor_id": 42}` | `409` — nasce indisponível |
-| mais dois livros para o leitor 42, e um quarto | `409` — o limite mordeu |
+| `{"livro_id": 99, "leitor_id": 42, "tipo_leitor": "aluno"}` | `404` — não está no acervo |
+| `{"livro_id": 2, "leitor_id": 42, "tipo_leitor": "aluno"}` | `409` — nasce indisponível |
+| mais dois livros para o leitor 42, e um quarto | `409` — o limite do aluno mordeu |
+| `{"livro_id": 5, "leitor_id": 9, "tipo_leitor": "egresso"}` | `422` — tipo desconhecido, e a mensagem lista os aceitos |
+| `{"livro_id": 5, "leitor_id": 9, "tipo_leitor": "professor"}` | `201` — daqui a 30 dias (60 em julho e dezembro) |
+| cadastre dois livros e peça os dois com `"leitor_id": 7, "tipo_leitor": "visitante"` | `201` no primeiro (7 dias), `409` no segundo — visitante leva um só |
+
+Esse `422` não vem do schema: `tipo_leitor` é um `str` qualquer, de
+propósito. Quem conhece os tipos é o `politicas.py`; um `Literal` no schema
+seria uma segunda lista para manter.
 
 ### Onde as duas turmas se encontram
 
@@ -96,6 +113,8 @@ alembic.ini                o Alembic gerou; a URL vem do .env
 alembic/
 ├── env.py                 ensina o Alembic a achar o banco e os três models
 └── versions/              uma migração por mudança de tabela — o histórico do banco
+    ├── 1ee353fc967a_…     a primeira: livros, emprestimos e usuarios
+    └── df904534ea10_…     a segunda: tipo_leitor e devolver_ate em emprestimos (P3, encontro 7)
 app/
 ├── database.py            conexão, sessão, Base e get_db — do projeto INTEIRO
 ├── seguranca.py           hash da senha, token JWT e get_current_user — do projeto INTEIRO
@@ -118,7 +137,8 @@ app/
 └── emprestimos/                                (P3 — o empréstimo, atrás da porta)
     ├── models.py          a tabela de empréstimos
     ├── schemas.py         contratos de entrada e saída
-    ├── erros.py           as três recusas
+    ├── erros.py           as quatro recusas
+    ├── politicas.py       o Strategy: o contrato, as políticas e quem escolhe
     ├── repositorio.py     as consultas — uma classe, para poder ser trocada
     ├── service.py         EmprestimoService: as regras, com o repositório injetado
     ├── dependencias.py    escolhe qual repositório o Service recebe
@@ -157,6 +177,7 @@ empréstimo rodam sem FastAPI, sem servidor e sem banco.
 |---|---|
 | `controller.py` | Controller — a fronteira da aplicação |
 | `service.py` | Service — onde mora a regra |
+| `politicas.py` | Strategy — uma política por tipo de leitor (P3, encontro 7) |
 | `repository.py` / `repositorio.py` | Repository — quem fala com o banco |
 | `Depends(...)` | Injeção de Dependência |
 | `@app.exception_handler` | Corrente de Responsabilidade — o elo que traduz recusa |
@@ -171,7 +192,9 @@ poetry run pytest
 
 Os testes criam um banco descartável, cadastram a Ana e fazem login antes de
 cada caso; `test_migracoes.py` roda o `alembic upgrade head` de verdade num
-banco vazio e confere que o esquema é o mesmo dos models.
+banco vazio e confere que o esquema é o mesmo dos models — e passa um banco
+de antes do encontro 7, com um empréstimo dentro, pela segunda migração, na
+subida e na descida.
 
 ## PostgreSQL
 
@@ -196,6 +219,10 @@ migrações. Nenhum arquivo dentro de `app/` muda.
   administrador cria contas, `POST /usuarios/` também vai atrás do porteiro,
   com uma checagem de papel — e a primeira conta nasce por uma migração de
   dados.
+- O `tipo_leitor` vem no corpo do pedido, e qualquer um se declara professor.
+  Num sistema de verdade ele viria do cadastro de quem está logado — uma
+  coluna `tipo` em `usuarios` —, e não do corpo. Aqui fica no corpo para
+  bater com a aula.
 - A camada de dados tem dois nomes — `repository.py` em Web III,
   `repositorio.py` em P3. É a mesma camada; cada turma a chamou como aprendeu
   a chamar.

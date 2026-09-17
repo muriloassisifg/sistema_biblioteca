@@ -6,6 +6,11 @@ mesma sessao que a funcionalidade de livros usa. O Service continua chamando
 os mesmos tres metodos, com os mesmos nomes, e recebendo os mesmos tipos de
 volta -- e por isso nao mudou nem um caractere pela terceira vez.
 
+No encontro 7 (Strategy) o `registrar` ganhou dois campos: o tipo do leitor
+e a data de devolucao. Repare no que ele NAO sabe: como essa data foi
+calculada. Ele recebe a data pronta (um `date`) e guarda -- regra de prazo
+nao e' assunto de quem fala com o banco.
+
 A conexao e a sessao NAO estao aqui: moram em `app/database.py`, porque sao
 do projeto inteiro. Aqui ficam so' as consultas desta funcionalidade.
 """
@@ -35,11 +40,17 @@ class RepositorioSQLAlchemy:
             .count()
         )
 
-    def registrar(self, livro_id, leitor_id):
+    def registrar(self, livro_id, leitor_id, tipo_leitor, devolver_ate):
         # Duas escritas, um commit: ou o emprestimo nasce E o livro fica
         # indisponivel, ou nenhum dos dois. E' a mesma transacao que o
         # encontro 5 fazia com dois execute() e um commit().
-        emprestimo = Emprestimo(livro_id=livro_id, leitor_id=leitor_id, status=ATIVO)
+        emprestimo = Emprestimo(
+            livro_id=livro_id,
+            leitor_id=leitor_id,
+            tipo_leitor=tipo_leitor,
+            devolver_ate=devolver_ate,
+            status=ATIVO,
+        )
         self.db.add(emprestimo)
 
         livro = self.buscar_livro(livro_id)

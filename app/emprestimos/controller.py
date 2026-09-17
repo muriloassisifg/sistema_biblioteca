@@ -21,4 +21,4 @@ def criar_emprestimo(
     dados: EmprestimoEntrada,
     service: EmprestimoService = Depends(obter_service),
 ):
-    return service.emprestar(dados.livro_id, dados.leitor_id)
+    return service.emprestar(dados.livro_id, dados.leitor_id, dados.tipo_leitor)
