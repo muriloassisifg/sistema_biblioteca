@@ -43,6 +43,18 @@ def test_a_tabela_do_encontro_5(client):
     assert emprestar(client, 5, 7).status_code == 201
 
 
+def test_so_se_empresta_livro_do_proprio_acervo(client, do_bruno):
+    # o livro 1 e' da Ana. O repositorio do Bruno nao enxerga o acervo dela,
+    # entao o Service recebe None e levanta o mesmo "nao esta no acervo" de
+    # sempre -- 404, sem nunca ter ouvido falar em dono.
+    r = emprestar(do_bruno, 1, 42)
+    assert r.status_code == 404
+    assert r.json()["detail"] == "Livro 1 nao esta no acervo"
+
+    # e nada aconteceu com o livro: a Ana continua podendo empresta-lo
+    assert emprestar(client, 1, 42).status_code == 201
+
+
 def test_professor_leva_por_30_dias_e_60_no_recesso(client):
     r = emprestar(client, 1, 42, "professor")
     assert r.status_code == 201

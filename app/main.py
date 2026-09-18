@@ -7,12 +7,10 @@ from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from .database import SessionLocal
 from .emprestimos import controller as emprestimos_controller
 from .emprestimos.erros import ErroDeEmprestimo, TipoDeLeitorDesconhecido
 from .emprestimos.erros import LivroNaoEncontrado as LivroNaoEncontradoNoEmprestimo
 from .livros import controller as livros_controller
-from .livros.acervo import semear_acervo_inicial
 from .livros.erros import ErroDeLivro, LivroNaoEncontrado
 from .usuarios import controller as usuarios_controller
 from .usuarios.erros import CredenciaisInvalidas, ErroDeUsuario
@@ -46,17 +44,14 @@ def migrar():
 @asynccontextmanager
 async def ciclo_de_vida(app: FastAPI):
     migrar()
-    # So' para a aula: os cinco livros iniciais entram quando a aplicacao
-    # sobe, se a biblioteca estiver vazia.
-    db = SessionLocal()
-    try:
-        semear_acervo_inicial(db)
-    finally:
-        db.close()
+    # O acervo inicial NAO nasce mais aqui. Desde que o livro tem dono
+    # (encontro 7 de Web III), livro sem dono nao seria visto por ninguem --
+    # entao os cinco nascem no cadastro da primeira pessoa, em
+    # usuarios/service.py.
     yield
 
 
-app = FastAPI(title="Biblioteca do Campus", version="0.5.0", lifespan=ciclo_de_vida)
+app = FastAPI(title="Biblioteca do Campus", version="0.6.0", lifespan=ciclo_de_vida)
 
 # Composite: o app inclui roteadores, e cada roteador guarda as suas rotas.
 app.include_router(usuarios_controller.router)

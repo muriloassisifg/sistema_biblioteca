@@ -11,6 +11,11 @@ e a data de devolucao. Repare no que ele NAO sabe: como essa data foi
 calculada. Ele recebe a data pronta (um `date`) e guarda -- regra de prazo
 nao e' assunto de quem fala com o banco.
 
+No encontro 7 de Web III ele passou a nascer com um dono: o `buscar_livro`
+so' enxerga o acervo de quem esta' logado. De novo sem abrir o `service.py`
+-- pedir o livro de outro bibliotecario cai no mesmo "livro nao encontrado"
+de sempre.
+
 A conexao e a sessao NAO estao aqui: moram em `app/database.py`, porque sao
 do projeto inteiro. Aqui ficam so' as consultas desta funcionalidade.
 """
@@ -23,15 +28,26 @@ ATIVO = "ativo"        # a string que o legado errava em um lugar so'
 
 
 class RepositorioSQLAlchemy:
-    """Recebe a sessao ja' aberta: quem escolhe qual e' o dependencias.py."""
+    """Recebe a sessao ja' aberta e o dono do acervo: quem escolhe os dois
+    e' o dependencias.py."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, dono_id):
         self.db = db
+        self.dono_id = dono_id      # so' se empresta livro do proprio acervo
 
     def buscar_livro(self, livro_id):
         # O que sai daqui e' um objeto (o Livro do SQLAlchemy), nunca a
         # linha crua do banco -- igual ao encontro 5.
-        return self.db.query(Livro).filter(Livro.id == livro_id).first()
+        #
+        # O filtro do dono e' do encontro 7 de Web III: daqui de dentro, o
+        # livro de outro bibliotecario simplesmente nao existe. Quem levanta
+        # o LivroNaoEncontrado (404) continua sendo o Service, com o mesmo
+        # `if livro is None` de sempre -- ele nunca soube de dono nenhum.
+        return (
+            self.db.query(Livro)
+            .filter(Livro.id == livro_id, Livro.dono_id == self.dono_id)
+            .first()
+        )
 
     def contar_ativos(self, leitor_id):
         return (

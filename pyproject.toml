@@ -1,6 +1,6 @@
 [project]
 name = "sistema-biblioteca"
-version = "0.5.0"
+version = "0.6.0"
 description = "Biblioteca do Campus - o sistema das disciplinas Programacao III e Programacao para Web III"
 requires-python = ">=3.11"
 

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 
 from ..database import Base
 
@@ -17,3 +18,7 @@ class Usuario(Base):
     nome = Column(String(80), nullable=False)
     email = Column(String(120), nullable=False, unique=True, index=True)
     senha_hash = Column(String(100), nullable=False)
+
+    # O outro lado do relacionamento: um usuario, muitos livros. Nao cria
+    # coluna nenhuma -- a chave estrangeira mora em livros.dono_id.
+    livros = relationship("Livro", back_populates="dono")

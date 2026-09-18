@@ -6,8 +6,15 @@ from .models import Livro
 # `db.query` fora daqui, a camada vazou.
 
 
-def listar(db: Session):
-    return db.query(Livro).all()
+def listar(db: Session, dono_id: int, titulo: str | None = None, disponivel: bool | None = None):
+    # A consulta vai sendo montada: o filtro do dono sempre entra; os outros,
+    # so' quando quem chamou pediu. Nada vai ao banco ate' o .all().
+    consulta = db.query(Livro).filter(Livro.dono_id == dono_id)
+    if titulo:
+        consulta = consulta.filter(Livro.titulo.ilike(f"%{titulo}%"))
+    if disponivel is not None:
+        consulta = consulta.filter(Livro.disponivel == disponivel)
+    return consulta.order_by(Livro.titulo).all()
 
 
 def buscar(db: Session, livro_id: int):
@@ -22,8 +29,9 @@ def criar(db: Session, dados: dict):
     return livro
 
 
-def buscar_por_titulo(db: Session, titulo: str):
-    return db.query(Livro).filter(Livro.titulo == titulo).first()
+def buscar_por_titulo(db: Session, dono_id: int, titulo: str):
+    # O titulo e' unico DENTRO do acervo de cada pessoa, nao no mundo.
+    return db.query(Livro).filter(Livro.dono_id == dono_id, Livro.titulo == titulo).first()
 
 
 def atualizar(db: Session, livro: Livro, mudancas: dict):
