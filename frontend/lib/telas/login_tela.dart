@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../api.dart';
+import '../servicos/sessao_service.dart';
 import 'cadastro_tela.dart';
 import 'inicio_tela.dart';
 
+// A camada de apresentação: recebe o clique, pede ao service e mostra a resposta.
 class LoginTela extends StatefulWidget {
-  const LoginTela({super.key, required this.api});
+  const LoginTela({super.key, required this.sessao});
 
-  final Api api;
+  final SessaoService sessao;
 
   @override
   State<LoginTela> createState() => _LoginTelaState();
@@ -24,28 +25,20 @@ class _LoginTelaState extends State<LoginTela> {
       carregando = true;
       erro = null;
     });
-    String? token;
     try {
-      token = await widget.api.entrar(email.text, senha.text);
-    } catch (e) {
+      await widget.sessao.entrar(email.text, senha.text);
+    } on ErroDeLogin catch (e) {
       setState(() {
         carregando = false;
-        erro = 'Não consegui falar com a API. O uvicorn está rodando?';
+        erro = e.mensagem;
       });
       return;
     }
     if (!mounted) return;
-    if (token == null) {
-      setState(() {
-        carregando = false;
-        erro = 'E-mail ou senha incorretos';
-      });
-      return;
-    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => InicioTela(api: widget.api, token: token!),
+        builder: (context) => InicioTela(sessao: widget.sessao),
       ),
     );
   }

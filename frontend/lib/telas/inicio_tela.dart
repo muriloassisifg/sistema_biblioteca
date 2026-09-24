@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../api.dart';
+import '../modelos/usuario.dart';
+import '../servicos/sessao_service.dart';
 import 'login_tela.dart';
 
+// A tela inicial: pede ao service quem está logado. O token mora na sessão.
 class InicioTela extends StatefulWidget {
-  const InicioTela({super.key, required this.api, required this.token});
+  const InicioTela({super.key, required this.sessao});
 
-  final Api api;
-  final String token;
+  final SessaoService sessao;
 
   @override
   State<InicioTela> createState() => _InicioTelaState();
 }
 
 class _InicioTelaState extends State<InicioTela> {
-  String? nome;
-  String? email;
+  Usuario? usuario;
 
   @override
   void initState() {
@@ -24,18 +24,18 @@ class _InicioTelaState extends State<InicioTela> {
   }
 
   Future<void> carregar() async {
-    final eu = await widget.api.quemSouEu(widget.token);
+    final quem = await widget.sessao.usuarioLogado();
     if (!mounted) return;
     setState(() {
-      nome = eu['nome'];
-      email = eu['email'];
+      usuario = quem;
     });
   }
 
   void sair() {
+    widget.sessao.sair();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginTela(api: widget.api)),
+      MaterialPageRoute(builder: (context) => LoginTela(sessao: widget.sessao)),
     );
   }
 
@@ -53,7 +53,7 @@ class _InicioTelaState extends State<InicioTela> {
         ],
       ),
       body: Center(
-        child: nome == null
+        child: usuario == null
             ? const CircularProgressIndicator()
             : Column(
                 mainAxisSize: MainAxisSize.min,
@@ -61,14 +61,14 @@ class _InicioTelaState extends State<InicioTela> {
                   const Icon(Icons.waving_hand, size: 56),
                   const SizedBox(height: 16),
                   Text(
-                    'Olá, $nome!',
+                    'Olá, ${usuario!.nome}!',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text('$email'),
+                  Text(usuario!.email),
                   const SizedBox(height: 24),
                   const Text('A API reconheceu o seu token.'),
                 ],

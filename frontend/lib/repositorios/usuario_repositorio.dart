@@ -2,12 +2,15 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../modelos/usuario.dart';
+
 // Onde a API roda: o uvicorn, na porta de sempre.
 const enderecoDaApi = 'http://127.0.0.1:8000';
 
-// Quem conversa com a API. As telas pedem; só esta classe sabe os endereços.
-class Api {
-  Api({http.Client? cliente}) : cliente = cliente ?? http.Client();
+// A camada de dados: o único lugar do app que sabe endereço, HTTP e JSON.
+// No backend, o repository fala com o banco; aqui, ele fala com a API.
+class UsuarioRepositorio {
+  UsuarioRepositorio({http.Client? cliente}) : cliente = cliente ?? http.Client();
 
   final http.Client cliente;
 
@@ -26,11 +29,11 @@ class Api {
   }
 
   // Pergunta quem é o dono do token. O token vai no cabeçalho do pedido.
-  Future<Map<String, dynamic>> quemSouEu(String token) async {
+  Future<Usuario> quemSouEu(String token) async {
     final resposta = await cliente.get(
       Uri.parse('$enderecoDaApi/usuarios/eu'),
       headers: {'Authorization': 'Bearer $token'},
     );
-    return jsonDecode(resposta.body);
+    return Usuario.fromJson(jsonDecode(resposta.body));
   }
 }

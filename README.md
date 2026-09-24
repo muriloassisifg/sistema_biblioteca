@@ -58,7 +58,19 @@ flutter run -d chrome
 ```
 
 Suba a API antes (`uvicorn app.main:app --reload`, na porta 8000): o app a
-procura em `http://127.0.0.1:8000`, no `lib/api.dart`.
+procura em `http://127.0.0.1:8000`, no `lib/repositorios/usuario_repositorio.dart`.
+
+O app segue as **mesmas camadas da API**, cada uma na sua pasta:
+
+| camada | na API (`app/`) | no app (`frontend/lib/`) |
+|---|---|---|
+| apresentação | `controller.py`: recebe o pedido HTTP | `telas/`: recebem o clique e mostram a resposta |
+| negócio | `service.py`: as regras | `servicos/sessao_service.dart`: as regras do login e o token |
+| dados | `repositorio.py`: fala com o banco | `repositorios/usuario_repositorio.dart`: fala com a API |
+| formato | `schemas.py` | `modelos/usuario.dart` |
+| quem monta | `dependencias.py` | `main.dart` |
+
+A tela nunca faz HTTP, e o repositório nunca mostra mensagem na tela.
 
 O **login é de verdade**: o app manda o e-mail e a senha para
 `POST /usuarios/login`, recebe o token e abre a **tela inicial**, que pede
