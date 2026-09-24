@@ -11,7 +11,7 @@ no mesmo banco e na mesma sessão — e um completa o outro: emprestar um livro
 apresentar, e só se empresta livro do próprio acervo.
 
 E agora o sistema ganhou a outra ponta: o **app em Flutter**, em `frontend/`,
-com as telas de login e de cadastro.
+com o login de verdade e a tela inicial.
 
 > Quem cursa as duas vê a mesma biblioteca dos dois lados: em Web III o foco
 > é *como ela funciona*; em P3, *como ela é por dentro*.
@@ -57,10 +57,20 @@ flutter pub get
 flutter run -d chrome
 ```
 
-Por enquanto são as telas de **login** e de **cadastro**, com os campos que a
-API pede (e-mail e senha; nome, e-mail e senha de pelo menos 6 caracteres).
-Os botões ainda não fazem nada, de propósito: ir de uma tela para a outra e
-falar com a API são os próximos passos. A prova das duas telas é o teste:
+Suba a API antes (`uvicorn app.main:app --reload`, na porta 8000): o app a
+procura em `http://127.0.0.1:8000`, no `lib/api.dart`.
+
+O **login é de verdade**: o app manda o e-mail e a senha para
+`POST /usuarios/login`, recebe o token e abre a **tela inicial**, que pede
+`GET /usuarios/eu` com o token no cabeçalho (`Authorization: Bearer ...`) e
+cumprimenta pelo nome. Senha errada fica no login, com a mensagem da API.
+O link *Criar uma conta* abre o cadastro, que por enquanto só mostra os
+campos (cadastrar pelo app é o próximo passo); crie a conta pelo `/docs`.
+
+A API deixa o app entrar por causa do **CORS**, no `app/main.py`: o app roda
+noutra porta, e o navegador só o deixa falar com a API porque ela autoriza
+as portas desta máquina. A prova do app são os testes, com uma API de
+mentira (`MockClient`), sem precisar do uvicorn:
 
 ```
 cd frontend

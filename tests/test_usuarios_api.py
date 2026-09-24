@@ -61,3 +61,20 @@ def test_token_forjado_e_recusado(client):
     forjado = jwt.encode({"sub": "1"}, "outra-chave-tambem-longa-o-bastante-para-o-teste", algorithm="HS256")
     r = client.get("/usuarios/eu", headers={"Authorization": "Bearer " + forjado})
     assert r.status_code == 401
+
+
+def test_o_app_no_navegador_pode_falar_com_a_api(anonimo):
+    # O CORS (Web III, encontro 8): o navegador pergunta antes (OPTIONS) se o app,
+    # que roda noutra porta, pode mandar o token no cabecalho. A API responde que sim.
+    pergunta = {
+        "Origin": "http://localhost:53999",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization",
+    }
+    r = anonimo.options("/usuarios/eu", headers=pergunta)
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == "http://localhost:53999"
+
+    # um site qualquer, fora desta maquina, nao recebe a permissao
+    r = anonimo.options("/usuarios/eu", headers={**pergunta, "Origin": "http://exemplo.com"})
+    assert "access-control-allow-origin" not in r.headers

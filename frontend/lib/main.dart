@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'api.dart';
 import 'telas/login_tela.dart';
 
 void main() {
@@ -15,7 +16,7 @@ class BibliotecaApp extends StatelessWidget {
       title: 'Biblioteca',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.indigo),
-      home: const LoginTela(),
+      home: LoginTela(api: Api()),
     );
   }
 }

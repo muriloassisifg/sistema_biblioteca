@@ -5,6 +5,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .emprestimos import controller as emprestimos_controller
@@ -52,6 +53,16 @@ async def ciclo_de_vida(app: FastAPI):
 
 
 app = FastAPI(title="Biblioteca do Campus", version="0.6.0", lifespan=ciclo_de_vida)
+
+# O app Flutter roda no navegador, noutro endereco (a porta muda a cada
+# `flutter run`). O navegador so' deixa uma pagina falar com outro endereco
+# se a API disser que deixa: e' o CORS. Aqui: qualquer porta desta maquina.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Composite: o app inclui roteadores, e cada roteador guarda as suas rotas.
 app.include_router(usuarios_controller.router)
