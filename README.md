@@ -89,12 +89,13 @@ código rodar; `404` é do protocolo; `401` é do porteiro.
 ### O empréstimo — P3 (com o crachá)
 
 Empreste de volta como a Ana: **só se empresta livro do próprio acervo**.
-Cada tipo de leitor tem a sua regra — é o Strategy do encontro 7:
+Cada tipo de leitor tem a sua regra — é o Strategy do encontro 7. Os números
+moram em `app/emprestimos/regras.json` (Factory Method, encontro 8):
 
 | tipo de leitor | livros ao mesmo tempo | prazo |
 |---|---|---|
 | `aluno` | 3 | 14 dias |
-| `professor` | 5 | 30 dias — 60 em julho e dezembro |
+| `professor` | 5 | 30 dias — 60 no recesso, de 18/12 a 01/02 |
 | `servidor` | 4 | 21 dias |
 | `visitante` | 1 | 7 dias |
 
@@ -106,13 +107,22 @@ Cada tipo de leitor tem a sua regra — é o Strategy do encontro 7:
 | `{"livro_id": 2, "leitor_id": 42, "tipo_leitor": "aluno"}` | `409` — nasce indisponível |
 | mais dois livros para o leitor 42, e um quarto | `409` — o limite do aluno mordeu |
 | `{"livro_id": 5, "leitor_id": 9, "tipo_leitor": "egresso"}` | `422` — tipo desconhecido, e a mensagem lista os aceitos |
-| `{"livro_id": 5, "leitor_id": 9, "tipo_leitor": "professor"}` | `201` — daqui a 30 dias (60 em julho e dezembro) |
+| `{"livro_id": 5, "leitor_id": 9, "tipo_leitor": "professor"}` | `201` — daqui a 30 dias (60 no recesso) |
 | cadastre dois livros e peça os dois com `"leitor_id": 7, "tipo_leitor": "visitante"` | `201` no primeiro (7 dias), `409` no segundo — visitante leva um só |
 | **Authorize** como o Bruno e peça o livro 1 | `404` — não está *no acervo dele* |
 
 Esse `422` não vem do schema: `tipo_leitor` é um `str` qualquer, de
 propósito. Quem conhece os tipos é o `politicas.py`; um `Literal` no schema
 seria uma segunda lista para manter.
+
+**Mudar um número não abre nenhum `.py`.** Troque os dias do aluno no
+`regras.json` e salve: o arquivo é lido a cada pedido, e o servidor nem
+precisa reiniciar. Um tipo novo só com prazo e limite (um `"egresso": {"dias":
+10, "livros": 2}`) também entra só no JSON: quem o cria é a `PoliticaPadrao`.
+Cada política sabe **se criar** a partir do trecho dela, no `@classmethod
+criar(cls, regras)` — o professor transforma as datas do recesso, que chegam
+como texto, em `date`. `politica_para` só escolhe a classe e pede
+`classe.criar(...)`: não lê chave nenhuma.
 
 E repare onde coube o acervo por dono: no `dependencias.py`, que agora monta
 `RepositorioSQLAlchemy(db, usuario.id)`. O `service.py` do empréstimo não
@@ -162,7 +172,8 @@ app/
     ├── models.py          a tabela de empréstimos
     ├── schemas.py         contratos de entrada e saída
     ├── erros.py           as quatro recusas
-    ├── politicas.py       o Strategy: o contrato, as políticas e quem escolhe
+    ├── politicas.py       Strategy e Factory Method: as políticas, e cada uma sabe se criar
+    ├── regras.json        os números: prazos, limites e o recesso do professor
     ├── repositorio.py     as consultas — uma classe, que só enxerga o acervo do dono
     ├── service.py         EmprestimoService: as regras, com o repositório injetado
     ├── dependencias.py    escolhe qual repositório o Service recebe, e com qual dono
@@ -211,6 +222,7 @@ empréstimo rodam sem FastAPI, sem servidor e sem banco.
 | `controller.py` | Controller — a fronteira da aplicação |
 | `service.py` | Service — onde mora a regra |
 | `politicas.py` | Strategy — uma política por tipo de leitor (P3, encontro 7) |
+| `criar(cls, regras)` | Factory Method — cada política se cria a partir do `regras.json` (P3, encontro 8) |
 | `repository.py` / `repositorio.py` | Repository — quem fala com o banco |
 | `Depends(...)` | Injeção de Dependência |
 | `@app.exception_handler` | Corrente de Responsabilidade — o elo que traduz recusa |

@@ -19,7 +19,14 @@ from app.emprestimos.erros import (
     LivroIndisponivel,
     LivroNaoEncontrado,
 )
-from app.emprestimos.politicas import POLITICAS, politica_para
+from app.emprestimos import politicas
+from app.emprestimos.politicas import (
+    CLASSES,
+    PoliticaPadrao,
+    PoliticaProfessor,
+    carregar_regras,
+    politica_para,
+)
 from app.emprestimos.service import EmprestimoService
 
 
@@ -104,10 +111,13 @@ def test_recusa_o_quarto_livro_do_mesmo_leitor():
 
 
 # O quadro do encontro 7: tipo de leitor, livros ao mesmo tempo, dias de prazo.
+# Desde o encontro 8 (Factory Method) os numeros moram no regras.json.
 HOJE = date.today()
+REGRAS = carregar_regras()
 QUADRO = [
     ("aluno", 3, 14),
-    ("professor", 5, 60 if HOJE.month in (7, 12) else 30),
+    ("professor", 5, 60 if (date.fromisoformat(REGRAS["professor"]["inicio_do_recesso"]) <= HOJE
+                            <= date.fromisoformat(REGRAS["professor"]["fim_do_recesso"])) else 30),
     ("servidor", 4, 21),
     ("visitante", 1, 7),
 ]
@@ -131,16 +141,48 @@ def test_cada_tipo_tem_o_seu_limite_e_o_seu_prazo(tipo_leitor, limite, prazo):
 
 
 def test_no_recesso_o_prazo_do_professor_dobra():
-    # A politica recebe o `hoje` de fora: por isso da' para testar julho em setembro.
+    # A politica recebe o `hoje` de fora: por isso da' para testar o Natal em setembro.
+    # As datas do recesso vem do regras.json (encontro 8), com as duas pontas contando.
     professor = politica_para("professor")
-    assert professor.prazo_em_dias(date(2026, 6, 30)) == 30
-    assert professor.prazo_em_dias(date(2026, 7, 1)) == 60
-    assert professor.prazo_em_dias(date(2026, 12, 31)) == 60
-    assert professor.prazo_em_dias(date(2027, 1, 1)) == 30
+    assert professor.prazo_em_dias(date(2026, 12, 17)) == 30
+    assert professor.prazo_em_dias(date(2026, 12, 18)) == 60
+    assert professor.prazo_em_dias(date(2027, 2, 1)) == 60
+    assert professor.prazo_em_dias(date(2027, 2, 2)) == 30
 
 
 def test_o_service_nao_conhece_nenhum_tipo_de_leitor():
-    # Nem "aluno" nem PoliticaAluno: quem sabe dos tipos e' o politicas.py.
+    # Nem "aluno" nem PoliticaPadrao: quem sabe dos tipos e' o regras.json.
     codigo = inspect.getsource(service_py).lower()
-    for tipo_leitor in POLITICAS:
+    for tipo_leitor in carregar_regras():
         assert tipo_leitor not in codigo
+
+
+# ---- Factory Method (P3, encontro 8): cada politica sabe se criar ----------------
+
+
+def test_cada_classe_se_cria_com_o_seu_trecho_das_regras():
+    # O criar e' chamado na CLASSE (@classmethod), antes de existir objeto.
+    padrao = PoliticaPadrao.criar({"dias": 10, "livros": 2})
+    assert isinstance(padrao, PoliticaPadrao)
+    assert (padrao.prazo_em_dias(HOJE), padrao.limite_de_livros()) == (10, 2)
+
+    # O professor transforma o texto do JSON em data: converter e' trabalho de quem cria.
+    professor = PoliticaProfessor.criar(REGRAS["professor"])
+    assert professor.inicio_do_recesso == date(2026, 12, 18)
+    assert professor.fim_do_recesso == date(2027, 2, 1)
+
+
+def test_um_tipo_so_com_numeros_entra_so_no_json(monkeypatch):
+    # O egresso nao existe em nenhum .py: basta o trecho dele nas regras.
+    regras = dict(REGRAS, egresso={"dias": 10, "livros": 2})
+    monkeypatch.setattr(politicas, "carregar_regras", lambda: regras)
+    egresso = politica_para("egresso")
+    assert type(egresso) is PoliticaPadrao
+    assert egresso.limite_de_livros() == 2
+
+
+def test_quem_escolhe_nao_le_nenhuma_chave_das_regras():
+    # politica_para so' escolhe a classe; quais chaves cada uma le, so' o criar dela sabe.
+    corpo = inspect.getsource(politicas.politica_para)
+    assert '["' not in corpo and "['" not in corpo
+    assert set(CLASSES) == {"professor"}

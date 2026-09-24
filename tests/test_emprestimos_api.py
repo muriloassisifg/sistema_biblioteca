@@ -60,7 +60,8 @@ def test_professor_leva_por_30_dias_e_60_no_recesso(client):
     assert r.status_code == 201
 
     hoje = date.today()
-    prazo = 60 if hoje.month in (7, 12) else 30
+    no_recesso = date(2026, 12, 18) <= hoje <= date(2027, 2, 1)     # as datas do regras.json
+    prazo = 60 if no_recesso else 30
     assert r.json()["tipo_leitor"] == "professor"
     assert r.json()["devolver_ate"] == (hoje + timedelta(days=prazo)).isoformat()
 

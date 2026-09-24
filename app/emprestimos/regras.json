@@ -1,0 +1,12 @@
+{
+  "aluno": {"dias": 14, "livros": 3},
+  "professor": {
+    "dias": 30,
+    "livros": 5,
+    "dias_no_recesso": 60,
+    "inicio_do_recesso": "2026-12-18",
+    "fim_do_recesso": "2027-02-01"
+  },
+  "servidor": {"dias": 21, "livros": 4},
+  "visitante": {"dias": 7, "livros": 1}
+}
