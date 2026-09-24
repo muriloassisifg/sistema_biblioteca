@@ -10,6 +10,9 @@ no mesmo banco e na mesma sessão — e um completa o outro: emprestar um livro
 é o único jeito de ele ficar indisponível, ninguém empresta sem se
 apresentar, e só se empresta livro do próprio acervo.
 
+E agora o sistema ganhou a outra ponta: o **app em Flutter**, em `frontend/`,
+com as telas de login e de cadastro.
+
 > Quem cursa as duas vê a mesma biblioteca dos dois lados: em Web III o foco
 > é *como ela funciona*; em P3, *como ela é por dentro*.
 
@@ -42,6 +45,27 @@ acervo vazio.
 
 Sem Poetry: `pip install fastapi uvicorn "pydantic[email]" sqlalchemy
 python-dotenv alembic pyjwt bcrypt python-multipart` e os mesmos comandos.
+
+## Rodar o app
+
+O app mora em `frontend/`, ao lado da API: é o salão, e a API é a cozinha
+(Flutter, Web III, a partir do encontro 8). Precisa do Flutter e do Chrome.
+
+```
+cd frontend
+flutter pub get
+flutter run -d chrome
+```
+
+Por enquanto são as telas de **login** e de **cadastro**, com os campos que a
+API pede (e-mail e senha; nome, e-mail e senha de pelo menos 6 caracteres).
+Os botões ainda não fazem nada, de propósito: ir de uma tela para a outra e
+falar com a API são os próximos passos. A prova das duas telas é o teste:
+
+```
+cd frontend
+flutter test
+```
 
 ## O que provar em um minuto, pelo `/docs`
 
