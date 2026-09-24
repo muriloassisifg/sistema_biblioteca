@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'repositorios/usuario_repositorio.dart';
-import 'servicos/sessao_service.dart';
-import 'telas/login_tela.dart';
+import 'repositories/usuario_repository.dart';
+import 'screens/login_screen.dart';
+import 'services/sessao_service.dart';
 
-// Aqui as camadas se montam, como no dependencias.py do backend:
+// Aqui as camadas se montam, como o main.py monta a API no backend:
 // o repositório entra no service, e o service entra nas telas.
 void main() {
-  final sessao = SessaoService(UsuarioRepositorio());
+  final sessao = SessaoService(UsuarioRepository());
   runApp(BibliotecaApp(sessao: sessao));
 }
 
@@ -22,7 +22,7 @@ class BibliotecaApp extends StatelessWidget {
       title: 'Biblioteca',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.indigo),
-      home: LoginTela(sessao: sessao),
+      home: LoginScreen(sessao: sessao),
     );
   }
 }

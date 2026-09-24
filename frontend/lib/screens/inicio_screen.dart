@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../modelos/usuario.dart';
-import '../servicos/sessao_service.dart';
-import 'login_tela.dart';
+import '../models/usuario.dart';
+import '../services/sessao_service.dart';
+import 'login_screen.dart';
 
 // A tela inicial: pede ao service quem está logado. O token mora na sessão.
-class InicioTela extends StatefulWidget {
-  const InicioTela({super.key, required this.sessao});
+class InicioScreen extends StatefulWidget {
+  const InicioScreen({super.key, required this.sessao});
 
   final SessaoService sessao;
 
   @override
-  State<InicioTela> createState() => _InicioTelaState();
+  State<InicioScreen> createState() => _InicioScreenState();
 }
 
-class _InicioTelaState extends State<InicioTela> {
+class _InicioScreenState extends State<InicioScreen> {
   Usuario? usuario;
 
   @override
@@ -35,7 +35,7 @@ class _InicioTelaState extends State<InicioTela> {
     widget.sessao.sair();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginTela(sessao: widget.sessao)),
+      MaterialPageRoute(builder: (context) => LoginScreen(sessao: widget.sessao)),
     );
   }
 

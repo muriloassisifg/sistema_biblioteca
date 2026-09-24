@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class CadastroTela extends StatelessWidget {
-  const CadastroTela({super.key});
+class CadastroScreen extends StatelessWidget {
+  const CadastroScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

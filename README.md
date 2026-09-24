@@ -58,17 +58,20 @@ flutter run -d chrome
 ```
 
 Suba a API antes (`uvicorn app.main:app --reload`, na porta 8000): o app a
-procura em `http://127.0.0.1:8000`, no `lib/repositorios/usuario_repositorio.dart`.
+procura em `http://127.0.0.1:8000`, no `lib/repositories/usuario_repository.dart`.
 
-O app segue as **mesmas camadas da API**, cada uma na sua pasta:
+O app segue as **mesmas camadas da API**, cada uma na sua pasta, com nome em inglês:
 
-| camada | na API (`app/`) | no app (`frontend/lib/`) |
+| camada | na API (`app/livros/`) | no app (`frontend/lib/`) |
 |---|---|---|
-| apresentação | `controller.py`: recebe o pedido HTTP | `telas/`: recebem o clique e mostram a resposta |
-| negócio | `service.py`: as regras | `servicos/sessao_service.dart`: as regras do login e o token |
-| dados | `repositorio.py`: fala com o banco | `repositorios/usuario_repositorio.dart`: fala com a API |
-| formato | `schemas.py` | `modelos/usuario.dart` |
-| quem monta | `dependencias.py` | `main.dart` |
+| quem monta | `main.py`: monta a API | `main.dart`: monta o app |
+| apresentação | `controller.py`: recebe o pedido HTTP | `screens/`: recebem o clique e mostram a resposta |
+| negócio | `service.py`: as regras | `services/`: as regras (hoje, `sessao_service.dart`: o login e o token) |
+| dados | `repository.py`: fala com o banco | `repositories/`: falam com a API (hoje, `usuario_repository.dart`) |
+| formato | `schemas.py` | `models/` (hoje, `usuario.dart`) |
+
+Cada pasta ganha um arquivo por assunto, como a API: os livros vão trazer
+`livros_service.dart`, `livro_repository.dart` e `livro.dart`.
 
 A tela nunca faz HTTP, e o repositório nunca mostra mensagem na tela.
 

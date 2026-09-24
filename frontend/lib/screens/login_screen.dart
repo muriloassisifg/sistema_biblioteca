@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
-import '../servicos/sessao_service.dart';
-import 'cadastro_tela.dart';
-import 'inicio_tela.dart';
+import '../services/sessao_service.dart';
+import 'cadastro_screen.dart';
+import 'inicio_screen.dart';
 
 // A camada de apresentação: recebe o clique, pede ao service e mostra a resposta.
-class LoginTela extends StatefulWidget {
-  const LoginTela({super.key, required this.sessao});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key, required this.sessao});
 
   final SessaoService sessao;
 
   @override
-  State<LoginTela> createState() => _LoginTelaState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginTelaState extends State<LoginTela> {
+class _LoginScreenState extends State<LoginScreen> {
   final email = TextEditingController();
   final senha = TextEditingController();
   bool carregando = false;
@@ -38,7 +38,7 @@ class _LoginTelaState extends State<LoginTela> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => InicioTela(sessao: widget.sessao),
+        builder: (context) => InicioScreen(sessao: widget.sessao),
       ),
     );
   }
@@ -115,7 +115,7 @@ class _LoginTelaState extends State<LoginTela> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const CadastroTela(),
+                              builder: (context) => const CadastroScreen(),
                             ),
                           );
                         },

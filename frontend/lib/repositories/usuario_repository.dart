@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../modelos/usuario.dart';
+import '../models/usuario.dart';
 
 // Onde a API roda: o uvicorn, na porta de sempre.
 const enderecoDaApi = 'http://127.0.0.1:8000';
 
 // A camada de dados: o único lugar do app que sabe endereço, HTTP e JSON.
 // No backend, o repository fala com o banco; aqui, ele fala com a API.
-class UsuarioRepositorio {
-  UsuarioRepositorio({http.Client? cliente}) : cliente = cliente ?? http.Client();
+class UsuarioRepository {
+  UsuarioRepository({http.Client? cliente}) : cliente = cliente ?? http.Client();
 
   final http.Client cliente;
 

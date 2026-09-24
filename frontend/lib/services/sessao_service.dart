@@ -1,5 +1,5 @@
-import '../modelos/usuario.dart';
-import '../repositorios/usuario_repositorio.dart';
+import '../models/usuario.dart';
+import '../repositories/usuario_repository.dart';
 
 // Uma recusa do app, com a frase para a tela mostrar: como os erros.py do backend.
 class ErroDeLogin implements Exception {
@@ -13,7 +13,7 @@ class ErroDeLogin implements Exception {
 class SessaoService {
   SessaoService(this.repositorio);
 
-  final UsuarioRepositorio repositorio;
+  final UsuarioRepository repositorio;
   String? token;
 
   Future<void> entrar(String email, String senha) async {

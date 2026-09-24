@@ -5,10 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-import 'package:frontend/repositorios/usuario_repositorio.dart';
-import 'package:frontend/servicos/sessao_service.dart';
-import 'package:frontend/telas/cadastro_tela.dart';
-import 'package:frontend/telas/login_tela.dart';
+import 'package:frontend/repositories/usuario_repository.dart';
+import 'package:frontend/services/sessao_service.dart';
+import 'package:frontend/screens/cadastro_screen.dart';
+import 'package:frontend/screens/login_screen.dart';
 
 // Uma API de mentira: responde como a de verdade, sem precisar do uvicorn.
 // A senha certa é 'segredo123', e o token que ela devolve é 'token-da-ana'.
@@ -36,7 +36,7 @@ SessaoService sessaoDeMentira() {
     }
     return http.Response('{"detail": "Not authenticated"}', 401);
   });
-  return SessaoService(UsuarioRepositorio(cliente: cliente));
+  return SessaoService(UsuarioRepository(cliente: cliente));
 }
 
 Future<void> preencherEEntrar(WidgetTester tester, String senha) async {
@@ -48,7 +48,7 @@ Future<void> preencherEEntrar(WidgetTester tester, String senha) async {
 
 void main() {
   testWidgets('a tela de login tem e-mail, senha e o botão Entrar', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: LoginTela(sessao: sessaoDeMentira())));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(sessao: sessaoDeMentira())));
 
     expect(find.byType(TextField), findsNWidgets(2));
     expect(find.widgetWithText(ElevatedButton, 'Entrar'), findsOneWidget);
@@ -56,38 +56,38 @@ void main() {
   });
 
   testWidgets('a tela de cadastro tem nome, e-mail e senha', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: CadastroTela()));
+    await tester.pumpWidget(const MaterialApp(home: CadastroScreen()));
 
     expect(find.byType(TextField), findsNWidgets(3));
     expect(find.widgetWithText(ElevatedButton, 'Cadastrar'), findsOneWidget);
   });
 
   testWidgets('com a senha certa, abre a tela inicial e a API reconhece o token', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: LoginTela(sessao: sessaoDeMentira())));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(sessao: sessaoDeMentira())));
 
     await preencherEEntrar(tester, 'segredo123');
 
     expect(find.text('Olá, Ana!'), findsOneWidget);
     expect(find.text('ana@biblioteca.com'), findsOneWidget);
-    expect(find.byType(LoginTela), findsNothing);
+    expect(find.byType(LoginScreen), findsNothing);
   });
 
   testWidgets('com a senha errada, fica no login e mostra o erro', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: LoginTela(sessao: sessaoDeMentira())));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(sessao: sessaoDeMentira())));
 
     await preencherEEntrar(tester, 'senha-errada');
 
     expect(find.text('E-mail ou senha incorretos'), findsOneWidget);
-    expect(find.byType(LoginTela), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 
   testWidgets('o link Criar uma conta abre o cadastro', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: LoginTela(sessao: sessaoDeMentira())));
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(sessao: sessaoDeMentira())));
 
     await tester.tap(find.text('Criar uma conta'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(CadastroTela), findsOneWidget);
+    expect(find.byType(CadastroScreen), findsOneWidget);
   });
 
   // O service testado sozinho, sem tela nenhuma: é o que as camadas compram.
