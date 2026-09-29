@@ -1,5 +1,5 @@
 class ErroDeEmprestimo(Exception):
-    """Qualquer recusa da biblioteca na hora de emprestar um livro."""
+    """Qualquer recusa da biblioteca na hora de emprestar ou devolver um livro."""
 
 
 class LivroNaoEncontrado(ErroDeEmprestimo):
@@ -16,3 +16,11 @@ class LimiteDeEmprestimosAtingido(ErroDeEmprestimo):
 
 class TipoDeLeitorDesconhecido(ErroDeEmprestimo):
     """Pediram um tipo de leitor que a biblioteca nao conhece."""
+
+
+class EmprestimoNaoEncontrado(ErroDeEmprestimo):
+    """Pediram a devolucao de um emprestimo que nao existe."""
+
+
+class EmprestimoJaDevolvido(ErroDeEmprestimo):
+    """O livro desse emprestimo ja voltou para a biblioteca."""

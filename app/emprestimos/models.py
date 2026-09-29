@@ -23,3 +23,8 @@ class Emprestimo(Base):
     # tipo ja' nasce "aluno" no banco, e a data pode ficar vazia.
     tipo_leitor = Column(String(20), nullable=False, server_default="aluno")
     devolver_ate = Column(Date, nullable=True)
+
+    @property
+    def ativo(self):
+        """O Service pergunta `emprestimo.ativo`, e nao a string do status."""
+        return self.status == "ativo"

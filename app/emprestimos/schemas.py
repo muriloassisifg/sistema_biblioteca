@@ -22,3 +22,11 @@ class EmprestimoPublico(BaseModel):    # SAI na resposta
     tipo_leitor: str
     devolver_ate: date | None          # AAAA-MM-DD; vazio nos de antes da migracao
     status: str
+
+
+class ComprovanteDeDevolucao(BaseModel):    # SAI na devolucao
+    emprestimo_id: int
+    livro_id: int
+    dias_de_atraso: int
+    multa: float
+    aviso: str

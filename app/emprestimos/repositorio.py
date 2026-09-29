@@ -25,6 +25,7 @@ from ..livros.models import Livro
 from .models import Emprestimo
 
 ATIVO = "ativo"        # a string que o legado errava em um lugar so'
+DEVOLVIDO = "devolvido"
 
 
 class RepositorioSQLAlchemy:
@@ -75,3 +76,25 @@ class RepositorioSQLAlchemy:
         self.db.commit()
         self.db.refresh(emprestimo)   # o id nasce no banco; sem isto vem None
         return emprestimo
+
+    def buscar_emprestimo(self, emprestimo_id):
+        # Da devolucao (encontro 9): so' enxerga o emprestimo de um livro do
+        # proprio acervo. O de outro bibliotecario nao existe daqui, e o
+        # Service levanta o mesmo "nao existe" de sempre.
+        return (
+            self.db.query(Emprestimo)
+            .join(Livro, Livro.id == Emprestimo.livro_id)
+            .filter(Emprestimo.id == emprestimo_id, Livro.dono_id == self.dono_id)
+            .first()
+        )
+
+    def marcar_devolvido(self, emprestimo_id, livro_id):
+        # Duas escritas, um commit, como no `registrar`: ou o emprestimo
+        # fecha E o livro volta a ficar disponivel, ou nenhum dos dois.
+        emprestimo = self.buscar_emprestimo(emprestimo_id)
+        emprestimo.status = DEVOLVIDO
+
+        livro = self.buscar_livro(livro_id)
+        livro.disponivel = True
+
+        self.db.commit()

@@ -178,6 +178,28 @@ E repare onde coube o acervo por dono: no `dependencias.py`, que agora monta
 mudou uma linha — ele continua com o mesmo `if livro is None`, e nunca ouviu
 falar em dono.
 
+### Devolver — P3 (a fachada)
+
+Devolver mexe em quatro peças: o `EmprestimoService` registra a devolução e
+libera o livro, o `MultaService` calcula a multa (R$ 2,50 por dia, no máximo
+R$ 50,00), o `Notificador` avisa o leitor e o `Historico` escreve uma linha
+no `devolucoes.txt`. **A rota não conhece nenhuma delas**: chama a
+`DevolucaoFacade`, a fachada (Facade, encontro 9), que guarda a sequência num
+lugar só. Acrescentar um passo à devolução muda a fachada e a montagem
+(`obter_devolucao`); a rota não abre.
+
+| pedido | resposta |
+|---|---|
+| empreste o livro 1 e `POST /emprestimos/1/devolucao` | `200` — `dias_de_atraso` 0, `multa` 0.0 |
+| o mesmo pedido de novo | `409` — já devolvido |
+| `POST /emprestimos/999/devolucao` | `404` — não existe |
+| **Authorize** como o Bruno e devolva o empréstimo da Ana | `404` — não existe *no acervo dele* |
+
+Para ver a multa sem esperar o prazo passar, empurre o prazo para trás no
+cliente de banco (`UPDATE emprestimos SET devolver_ate = date('now', '-6
+days') WHERE id = 1`) e devolva: `dias_de_atraso` 6 e `multa` 15.0. Os
+`tests/test_devolucao_api.py` fazem isso sozinhos.
+
 ### Onde as duas turmas se encontram
 
 Depois do primeiro `POST /emprestimos/`: `GET /livros/1` mostra
@@ -220,13 +242,17 @@ app/
 └── emprestimos/                                (P3 — o empréstimo, atrás da porta)
     ├── models.py          a tabela de empréstimos
     ├── schemas.py         contratos de entrada e saída
-    ├── erros.py           as quatro recusas
+    ├── erros.py           as seis recusas, com as duas da devolução
     ├── politicas.py       Strategy e Factory Method: as políticas, e cada uma sabe se criar
     ├── regras.json        os números: prazos, limites e o recesso do professor
     ├── repositorio.py     as consultas — uma classe, que só enxerga o acervo do dono
-    ├── service.py         EmprestimoService: as regras, com o repositório injetado
-    ├── dependencias.py    escolhe qual repositório o Service recebe, e com qual dono
-    └── controller.py      a rota
+    ├── service.py         EmprestimoService: as regras, com o repositório injetado (emprestar e devolver)
+    ├── multas.py          MultaService: os dias de atraso e a multa
+    ├── notificador.py     avisa o leitor (aqui, uma linha no terminal do servidor)
+    ├── historico.py       uma linha por devolução, no devolucoes.txt
+    ├── devolucao.py       DevolucaoFacade: a fachada, uma chamada só para as quatro peças da devolução
+    ├── dependencias.py    escolhe qual repositório o Service recebe, com qual dono, e monta a fachada
+    └── controller.py      as rotas: emprestar (direto ao Service) e devolver (pela fachada)
 tests/                     as tabelas acima, rodando sozinhas (pytest)
 ```
 
@@ -272,6 +298,7 @@ empréstimo rodam sem FastAPI, sem servidor e sem banco.
 | `service.py` | Service — onde mora a regra |
 | `politicas.py` | Strategy — uma política por tipo de leitor (P3, encontro 7) |
 | `criar(cls, regras)` | Factory Method — cada política se cria a partir do `regras.json` (P3, encontro 8) |
+| `devolucao.py` | Facade — a devolução é uma chamada só para uma sequência de peças (P3, encontro 9) |
 | `repository.py` / `repositorio.py` | Repository — quem fala com o banco |
 | `Depends(...)` | Injeção de Dependência |
 | `@app.exception_handler` | Corrente de Responsabilidade — o elo que traduz recusa |
@@ -306,6 +333,12 @@ migrações. Nenhum arquivo dentro de `app/` muda.
 
 ## Honestidades
 
+- A devolução tem peças de brinde: o `Notificador` só escreve uma linha no terminal do servidor, e o
+  `Historico` num arquivo de texto (`devolucoes.txt`, fora do Git). Numa biblioteca de verdade seriam um
+  e-mail e uma tabela. O totem de autoatendimento da aula fica só no material da aula: aqui ele precisaria
+  de uma sessão e de quem está logado.
+- Os empréstimos de antes da migração do Strategy não têm data de devolução (a coluna é nula), e por isso
+  a `MultaService` os trata como sem atraso.
 - O `db` atravessa o service de livros e de usuários. Não é o desenho mais
   puro possível; `emprestimos/` mostra o passo seguinte.
 - O acervo inicial de brinde para quem se cadastra primeiro resolve para a

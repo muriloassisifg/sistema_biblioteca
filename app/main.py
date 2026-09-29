@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .emprestimos import controller as emprestimos_controller
-from .emprestimos.erros import ErroDeEmprestimo, TipoDeLeitorDesconhecido
+from .emprestimos.erros import EmprestimoNaoEncontrado, ErroDeEmprestimo, TipoDeLeitorDesconhecido
 from .emprestimos.erros import LivroNaoEncontrado as LivroNaoEncontradoNoEmprestimo
 from .livros import controller as livros_controller
 from .livros.erros import ErroDeLivro, LivroNaoEncontrado
@@ -74,6 +74,7 @@ app.include_router(emprestimos_controller.router)
 STATUS = {
     LivroNaoEncontrado: 404,
     LivroNaoEncontradoNoEmprestimo: 404,
+    EmprestimoNaoEncontrado: 404,
     TipoDeLeitorDesconhecido: 422,   # como os 422 do schema: o pedido e' que nao serve
     CredenciaisInvalidas: 401,
 }
