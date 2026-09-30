@@ -11,7 +11,8 @@ no mesmo banco e na mesma sessão — e um completa o outro: emprestar um livro
 apresentar, e só se empresta livro do próprio acervo.
 
 E agora o sistema ganhou a outra ponta: o **app em Flutter**, em `frontend/`,
-com o login de verdade e a tela inicial.
+com o login de verdade, as telas com nome (rotas nomeadas e um guarda de
+rotas), a sessão no **Provider** e um menu lateral com o nome de quem entrou.
 
 > Quem cursa as duas vê a mesma biblioteca dos dois lados: em Web III o foco
 > é *como ela funciona*; em P3, *como ela é por dentro*.
@@ -64,9 +65,9 @@ O app segue as **mesmas camadas da API**, cada uma na sua pasta, com nome em ing
 
 | camada | na API (`app/livros/`) | no app (`frontend/lib/`) |
 |---|---|---|
-| quem monta | `main.py`: monta a API | `main.dart`: monta o app |
-| apresentação | `controller.py`: recebe o pedido HTTP | `screens/`: recebem o clique e mostram a resposta |
-| negócio | `service.py`: as regras | `services/`: as regras (hoje, `sessao_service.dart`: o login e o token) |
+| quem monta | `main.py`: monta a API | `main.dart`: monta o app (o Provider no alto e a tabela de rotas); `routes.dart`: o nome de cada tela |
+| apresentação | `controller.py`: recebe o pedido HTTP | `screens/` e `widgets/` (o menu e o guarda de rotas): recebem o clique e mostram a resposta |
+| negócio | `service.py`: as regras | `services/`: as regras (hoje, `sessao_service.dart`: o login e a sessão, que avisa quem está de olho: é um `ChangeNotifier`) |
 | dados | `repository.py`: fala com o banco | `repositories/`: falam com a API (hoje, `usuario_repository.dart`) |
 | formato | `schemas.py` | `models/` (hoje, `usuario.dart`) |
 
@@ -76,11 +77,28 @@ Cada pasta ganha um arquivo por assunto, como a API: os livros vão trazer
 A tela nunca faz HTTP, e o repositório nunca mostra mensagem na tela.
 
 O **login é de verdade**: o app manda o e-mail e a senha para
-`POST /usuarios/login`, recebe o token e abre a **tela inicial**, que pede
-`GET /usuarios/eu` com o token no cabeçalho (`Authorization: Bearer ...`) e
-cumprimenta pelo nome. Senha errada fica no login, com a mensagem da API.
-O link *Criar uma conta* abre o cadastro, que por enquanto só mostra os
-campos (cadastrar pelo app é o próximo passo); crie a conta pelo `/docs`.
+`POST /usuarios/login`, recebe o token, pede `GET /usuarios/eu` com o token no
+cabeçalho (`Authorization: Bearer ...`) e guarda o token e o usuário na
+**sessão**; depois abre a tela inicial, que cumprimenta pelo nome. Senha errada
+fica no login, com a mensagem da API. O link *Criar uma conta* abre o
+cadastro, que por enquanto só mostra os campos (cadastrar pelo app é o próximo
+passo); crie a conta pelo `/docs`.
+
+A **navegação é por nome**: `lib/routes.dart` guarda o nome de cada tela
+(`AppRoutes.login`, `inicio`, `livros`, `perfil`), o `main.dart` liga cada nome
+à tela, e as telas navegam com `pushNamed` (abre por cima),
+`pushReplacementNamed` (troca a de cima, como o menu) e
+`pushNamedAndRemoveUntil` (esvazia a pilha, como o Sair). As telas de dentro do
+app passam pelo `RotaProtegida`: sem sessão, mostram o login, então o F5 numa
+tela protegida cai no login.
+
+A **sessão** (`SessaoService`) é um `ChangeNotifier`: chama `notifyListeners()`
+quando muda e fica no topo do app, num `ChangeNotifierProvider`. As telas a leem
+com `context.read` (para chamar) e `context.watch` (para mostrar), e nenhuma a
+recebe pelo construtor. O menu lateral (`widgets/app_drawer.dart`) mostra o nome
+de quem entrou e tem o Sair, que apaga a sessão e limpa a pilha. O token vive só
+na memória: recarregar a página sai do app (guardá-lo no aparelho é o próximo
+passo). A tela de livros é um lugar reservado; a listagem chega adiante.
 
 A API deixa o app entrar por causa do **CORS**, no `app/main.py`: o app roda
 noutra porta, e o navegador só o deixa falar com a API porque ela autoriza
