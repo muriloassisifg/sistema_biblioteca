@@ -199,8 +199,8 @@ falar em dono.
 ### Devolver — P3 (a fachada)
 
 Devolver mexe em quatro peças: o `EmprestimoService` registra a devolução e
-libera o livro, o `MultaService` calcula a multa (R$ 2,50 por dia, no máximo
-R$ 50,00), o `Notificador` avisa o leitor e o `Historico` escreve uma linha
+libera o livro, o `MultaService` calcula a multa (os números moram no
+`multa.json`: R$ 2,50 por dia, no máximo R$ 50,00), o `Notificador` avisa o leitor e o `Historico` escreve uma linha
 no `devolucoes.txt`. **A rota não conhece nenhuma delas**: chama a
 `DevolucaoFacade`, a fachada (Facade, encontro 9), que guarda a sequência num
 lugar só. Acrescentar um passo à devolução muda a fachada e a montagem
@@ -265,7 +265,8 @@ app/
     ├── regras.json        os números: prazos, limites e o recesso do professor
     ├── repositorio.py     as consultas — uma classe, que só enxerga o acervo do dono
     ├── service.py         EmprestimoService: as regras, com o repositório injetado (emprestar e devolver)
-    ├── multas.py          MultaService: os dias de atraso e a multa
+    ├── multas.py          MultaService: os dias de atraso e a multa, criada a partir do multa.json
+    ├── multa.json         os números da multa: R$ 2,50 por dia, no máximo R$ 50,00
     ├── notificador.py     avisa o leitor (aqui, uma linha no terminal do servidor)
     ├── historico.py       uma linha por devolução, no devolucoes.txt
     ├── devolucao.py       DevolucaoFacade: a fachada, uma chamada só para as quatro peças da devolução

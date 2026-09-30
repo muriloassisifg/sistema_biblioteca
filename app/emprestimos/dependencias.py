@@ -6,7 +6,7 @@ from ..seguranca import get_current_user
 from ..usuarios.models import Usuario
 from .devolucao import DevolucaoFacade
 from .historico import Historico
-from .multas import MultaService
+from .multas import MultaService, carregar_multa
 from .notificador import Notificador
 from .repositorio import RepositorioSQLAlchemy
 from .service import EmprestimoService
@@ -40,4 +40,6 @@ def obter_devolucao(service: EmprestimoService = Depends(obter_service)):
     as outras tres pecas nao dependem de nada. Quem usa a fachada -- a rota --
     nao monta peca nenhuma: pede a fachada pronta.
     """
-    return DevolucaoFacade(service, MultaService(), Notificador(), Historico())
+    return DevolucaoFacade(
+        service, MultaService.criar(carregar_multa()), Notificador(), Historico()
+    )

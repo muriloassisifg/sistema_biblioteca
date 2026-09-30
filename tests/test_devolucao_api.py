@@ -7,7 +7,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.database import SessionLocal
-from app.emprestimos import historico
+from app.emprestimos import historico, multas
 from app.emprestimos.devolucao import DevolucaoFacade
 from app.emprestimos.erros import EmprestimoNaoEncontrado
 from app.emprestimos.models import Emprestimo
@@ -76,6 +76,21 @@ def test_a_multa_tem_teto_de_50_reais(client):
     r = devolver(client, emprestimo_id)
     assert r.json()["dias_de_atraso"] == 30
     assert r.json()["multa"] == 50.0
+
+
+def test_os_numeros_da_multa_vem_do_multa_json(client, tmp_path, monkeypatch):
+    # mudar um numero nao abre nenhum .py: so' o JSON (como o regras.json do emprestimo)
+    arquivo = tmp_path / "multa.json"
+    arquivo.write_text('{"por_dia": 3.0, "teto": 10.0}', encoding="utf-8")
+    monkeypatch.setattr(multas, "ARQUIVO_DA_MULTA", arquivo)
+
+    emprestimo_id = emprestar(client, 1)
+    atrasar(emprestimo_id, 2)
+    assert devolver(client, emprestimo_id).json()["multa"] == 6.0     # 2 dias x R$ 3,00
+
+    emprestimo_id = emprestar(client, 1)
+    atrasar(emprestimo_id, 6)
+    assert devolver(client, emprestimo_id).json()["multa"] == 10.0    # 6 x 3 passa do teto de R$ 10,00
 
 
 def test_emprestimo_de_antes_da_migracao_nao_tem_data_e_nao_tem_multa(client):
