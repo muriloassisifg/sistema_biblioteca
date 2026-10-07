@@ -1,7 +1,8 @@
 """O relatorio de atrasos: os emprestimos que ja passaram do prazo.
 
-Escrito com pressa, na vespera da reuniao da coordenacao. Funciona -- os
-testes em tests/ confirmam -- mas ninguem quer mexer nele.
+Cada funcao tem um motivo so' para mudar: buscar no banco, decidir a situacao
+ou o contato, ou escrever a linha. A multa nao e' calculada aqui: mora no
+MultaService, que le o multa.json.
 """
 import sqlite3
 from datetime import date
@@ -12,10 +13,7 @@ LIMITE_GRAVE = 30      # acima de quantos dias de atraso a situacao e' GRAVE
 LIMITE_ATENCAO = 7     # e acima de quantos ela deixa de ser so' RECENTE
 
 
-def relatorio_de_atrasos(banco, hoje):
-    multas = obter_multas()
-
-    # --- busca no banco ---
+def buscar_emprestimos_ativos(banco):
     conexao = sqlite3.connect(banco)
     conexao.row_factory = sqlite3.Row
     emprestimos = conexao.execute(
@@ -25,38 +23,49 @@ def relatorio_de_atrasos(banco, hoje):
         "ORDER BY e.devolver_ate, e.id"
     ).fetchall()
     conexao.close()
+    return emprestimos
 
-    # --- dias, multa, situacao e contato ---
+
+def situacao_do_atraso(dias):
+    if dias > LIMITE_GRAVE:
+        return "GRAVE"
+    if dias > LIMITE_ATENCAO:
+        return "ATENCAO"
+    return "RECENTE"
+
+
+def contato_para(tipo_leitor):
+    if tipo_leitor == "aluno":
+        return "secretaria"
+    if tipo_leitor == "professor":
+        return "coordenacao"
+    if tipo_leitor == "servidor":
+        return "RH"
+    return "atendimento"
+
+
+def linha_do_atraso(emprestimo, dias, multa):
+    return (
+        f"emprestimo {emprestimo['id']} | leitor {emprestimo['leitor_id']} | "
+        f"{emprestimo['titulo']} | {dias} dias | R$ {multa:.2f} | "
+        f"{situacao_do_atraso(dias)} | "
+        f"contato: {contato_para(emprestimo['tipo_leitor'])}"
+    )
+
+
+def relatorio_de_atrasos(banco, hoje):
+    multas = obter_multas()
     linhas = []
     total = 0
-    for emprestimo in emprestimos:
+    for emprestimo in buscar_emprestimos_ativos(banco):
         prazo = date.fromisoformat(emprestimo["devolver_ate"])
         dias = multas.dias_de_atraso(prazo, hoje)
         if dias == 0:
             continue
         multa = multas.calcular(dias)
-        if dias > LIMITE_GRAVE:
-            situacao = "GRAVE"
-        elif dias > LIMITE_ATENCAO:
-            situacao = "ATENCAO"
-        else:
-            situacao = "RECENTE"
-        if emprestimo["tipo_leitor"] == "aluno":
-            contato = "secretaria"
-        elif emprestimo["tipo_leitor"] == "professor":
-            contato = "coordenacao"
-        elif emprestimo["tipo_leitor"] == "servidor":
-            contato = "RH"
-        else:
-            contato = "atendimento"
-        linhas.append(
-            f"emprestimo {emprestimo['id']} | leitor {emprestimo['leitor_id']} | "
-            f"{emprestimo['titulo']} | {dias} dias | R$ {multa:.2f} | "
-            f"{situacao} | contato: {contato}"
-        )
+        linhas.append(linha_do_atraso(emprestimo, dias, multa))
         total += multa
 
-    # --- monta o texto ---
     texto = f"RELATORIO DE ATRASOS - {hoje.strftime('%d/%m/%Y')}\n"
     for linha in linhas:
         texto += linha + "\n"
