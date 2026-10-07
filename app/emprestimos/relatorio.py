@@ -8,6 +8,9 @@ from datetime import date
 
 from .dependencias import obter_multas
 
+LIMITE_GRAVE = 30      # acima de quantos dias de atraso a situacao e' GRAVE
+LIMITE_ATENCAO = 7     # e acima de quantos ela deixa de ser so' RECENTE
+
 
 def relatorio_de_atrasos(banco, hoje):
     multas = obter_multas()
@@ -32,9 +35,9 @@ def relatorio_de_atrasos(banco, hoje):
         if dias == 0:
             continue
         multa = multas.calcular(dias)
-        if dias > 30:
+        if dias > LIMITE_GRAVE:
             situacao = "GRAVE"
-        elif dias > 7:
+        elif dias > LIMITE_ATENCAO:
             situacao = "ATENCAO"
         else:
             situacao = "RECENTE"
