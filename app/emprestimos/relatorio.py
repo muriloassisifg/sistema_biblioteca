@@ -12,6 +12,13 @@ from .dependencias import obter_multas
 LIMITE_GRAVE = 30      # acima de quantos dias de atraso a situacao e' GRAVE
 LIMITE_ATENCAO = 7     # e acima de quantos ela deixa de ser so' RECENTE
 
+CONTATOS = {
+    "aluno": "secretaria",
+    "professor": "coordenacao",
+    "servidor": "RH",
+}
+CONTATO_PADRAO = "atendimento"
+
 
 def buscar_emprestimos_ativos(banco):
     conexao = sqlite3.connect(banco)
@@ -35,13 +42,7 @@ def situacao_do_atraso(dias):
 
 
 def contato_para(tipo_leitor):
-    if tipo_leitor == "aluno":
-        return "secretaria"
-    if tipo_leitor == "professor":
-        return "coordenacao"
-    if tipo_leitor == "servidor":
-        return "RH"
-    return "atendimento"
+    return CONTATOS.get(tipo_leitor, CONTATO_PADRAO)
 
 
 def linha_do_atraso(emprestimo, dias, multa):
