@@ -33,6 +33,15 @@ def obter_service(
     return EmprestimoService(RepositorioSQLAlchemy(db, usuario.id))
 
 
+def obter_multas():
+    """A MultaService, com os numeros do multa.json.
+
+    Quem calcula multa -- a fachada da devolucao e o relatorio de atrasos --
+    a pede aqui: os dois usam a mesma conta, e o JSON e' lido a cada pedido.
+    """
+    return MultaService.criar(carregar_multa())
+
+
 def obter_devolucao(service: EmprestimoService = Depends(obter_service)):
     """Monta a fachada da devolucao, com as quatro pecas dentro.
 
@@ -40,6 +49,4 @@ def obter_devolucao(service: EmprestimoService = Depends(obter_service)):
     as outras tres pecas nao dependem de nada. Quem usa a fachada -- a rota --
     nao monta peca nenhuma: pede a fachada pronta.
     """
-    return DevolucaoFacade(
-        service, MultaService.criar(carregar_multa()), Notificador(), Historico()
-    )
+    return DevolucaoFacade(service, obter_multas(), Notificador(), Historico())

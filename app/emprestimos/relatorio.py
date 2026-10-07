@@ -6,8 +6,12 @@ testes em tests/ confirmam -- mas ninguem quer mexer nele.
 import sqlite3
 from datetime import date
 
+from .dependencias import obter_multas
+
 
 def relatorio_de_atrasos(banco, hoje):
+    multas = obter_multas()
+
     # --- busca no banco ---
     conexao = sqlite3.connect(banco)
     conexao.row_factory = sqlite3.Row
@@ -23,12 +27,11 @@ def relatorio_de_atrasos(banco, hoje):
     linhas = []
     total = 0
     for emprestimo in emprestimos:
-        dias = (hoje - date.fromisoformat(emprestimo["devolver_ate"])).days
-        if dias <= 0:
+        prazo = date.fromisoformat(emprestimo["devolver_ate"])
+        dias = multas.dias_de_atraso(prazo, hoje)
+        if dias == 0:
             continue
-        multa = dias * 2.5
-        if multa > 50:
-            multa = 50
+        multa = multas.calcular(dias)
         if dias > 30:
             situacao = "GRAVE"
         elif dias > 7:
