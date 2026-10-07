@@ -78,3 +78,55 @@ def test_o_app_no_navegador_pode_falar_com_a_api(anonimo):
     # um site qualquer, fora desta maquina, nao recebe a permissao
     r = anonimo.options("/usuarios/eu", headers={**pergunta, "Origin": "http://exemplo.com"})
     assert "access-control-allow-origin" not in r.headers
+
+
+def test_o_cadastro_do_app_e_as_recusas_que_ele_le(anonimo):
+    # O app (Web III, encontro 10) cadastra com o POST /usuarios/ e JSON no
+    # corpo, e le a resposta: 201 e o usuario (sem senha); 409 com o "detail"
+    # em TEXTO; 422 com o "detail" em LISTA, um item por campo errado -- e o app
+    # mostra "<campo>: <mensagem>", tirados de `loc[-1]` e `msg`.
+    r = anonimo.post("/usuarios/", json=ANA)
+    assert r.status_code == 201
+    assert r.json()["nome"] == ANA["nome"] and r.json()["email"] == ANA["email"]
+    assert "senha" not in r.json()
+
+    # depois de cadastrar, o app entra pelo login, com o que acabou de mandar
+    r = anonimo.post("/usuarios/login", data={"username": ANA["email"], "password": ANA["senha"]})
+    assert r.status_code == 200 and r.json()["access_token"]
+
+    r = anonimo.post("/usuarios/", json=ANA)
+    assert r.status_code == 409
+    assert isinstance(r.json()["detail"], str)
+
+    for corpo, campo in [
+        ({**ANA, "email": "abc"}, "email"),
+        ({**ANA, "senha": "123"}, "senha"),
+        ({**ANA, "nome": "A"}, "nome"),
+        ({"nome": "Bia", "email": "bia@ifg.edu.br"}, "senha"),    # campo que nao veio
+    ]:
+        r = anonimo.post("/usuarios/", json=corpo)
+        assert r.status_code == 422
+        primeiro = r.json()["detail"][0]
+        assert primeiro["loc"][-1] == campo and isinstance(primeiro["msg"], str)
+
+
+def test_o_app_no_navegador_pode_cadastrar(anonimo):
+    # O POST com JSON tambem e' perguntado antes (OPTIONS): o navegador quer saber
+    # se o app, noutra porta, pode mandar o cabecalho Content-Type.
+    origem = "http://localhost:53999"
+    pergunta = {
+        "Origin": origem,
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type",
+    }
+    r = anonimo.options("/usuarios/", headers=pergunta)
+    assert r.status_code == 200
+    assert r.headers["access-control-allow-origin"] == origem
+    assert "content-type" in r.headers["access-control-allow-headers"].lower()
+
+    # E a resposta de cada POST -- o 201, o 409 e o 422 -- tambem leva a permissao:
+    # sem ela o navegador esconde o corpo, e o app so' veria "nao consegui falar com a API".
+    for corpo, status in [(ANA, 201), (ANA, 409), ({**ANA, "email": "abc"}, 422)]:
+        r = anonimo.post("/usuarios/", json=corpo, headers={"Origin": origem})
+        assert r.status_code == status
+        assert r.headers["access-control-allow-origin"] == origem

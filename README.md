@@ -11,8 +11,9 @@ no mesmo banco e na mesma sessão — e um completa o outro: emprestar um livro
 apresentar, e só se empresta livro do próprio acervo.
 
 E agora o sistema ganhou a outra ponta: o **app em Flutter**, em `frontend/`,
-com o login de verdade, as telas com nome (rotas nomeadas e um guarda de
-rotas), a sessão no **Provider** e um menu lateral com o nome de quem entrou.
+com o login e o **cadastro** de verdade, as telas com nome (rotas nomeadas e um
+guarda de rotas), a sessão no **Provider** — **guardada no aparelho**, para
+sobreviver ao F5 — e um menu lateral com o nome de quem entrou.
 
 > Quem cursa as duas vê a mesma biblioteca dos dois lados: em Web III o foco
 > é *como ela funciona*; em P3, *como ela é por dentro*.
@@ -65,10 +66,10 @@ O app segue as **mesmas camadas da API**, cada uma na sua pasta, com nome em ing
 
 | camada | na API (`app/livros/`) | no app (`frontend/lib/`) |
 |---|---|---|
-| quem monta | `main.py`: monta a API | `main.dart`: monta o app (o Provider no alto e a tabela de rotas); `routes.dart`: o nome de cada tela |
+| quem monta | `main.py`: monta a API | `main.dart`: monta o app (o Provider no alto, a tabela de rotas e a sessão restaurada antes da primeira tela); `routes.dart`: o nome de cada tela |
 | apresentação | `controller.py`: recebe o pedido HTTP | `screens/` e `widgets/` (o menu e o guarda de rotas): recebem o clique e mostram a resposta |
-| negócio | `service.py`: as regras | `services/`: as regras (hoje, `sessao_service.dart`: o login e a sessão, que avisa quem está de olho: é um `ChangeNotifier`) |
-| dados | `repository.py`: fala com o banco | `repositories/`: falam com a API (hoje, `usuario_repository.dart`) |
+| negócio | `service.py`: as regras | `services/`: as regras (hoje, `sessao_service.dart`: o login, o cadastro e a sessão, que avisa quem está de olho: é um `ChangeNotifier`) |
+| dados | `repository.py`: fala com o banco | `repositories/`: falam com o mundo de fora (hoje, `usuario_repository.dart`: a API; e `token_repository.dart`: o aparelho, onde o token fica guardado) |
 | formato | `schemas.py` | `models/` (hoje, `usuario.dart`) |
 
 Cada pasta ganha um arquivo por assunto, como a API: os livros vão trazer
@@ -80,9 +81,15 @@ O **login é de verdade**: o app manda o e-mail e a senha para
 `POST /usuarios/login`, recebe o token, pede `GET /usuarios/eu` com o token no
 cabeçalho (`Authorization: Bearer ...`) e guarda o token e o usuário na
 **sessão**; depois abre a tela inicial, que cumprimenta pelo nome. Senha errada
-fica no login, com a mensagem da API. O link *Criar uma conta* abre o
-cadastro, que por enquanto só mostra os campos (cadastrar pelo app é o próximo
-passo); crie a conta pelo `/docs`.
+fica no login, com a mensagem da API.
+
+O **cadastro também é de verdade**: o link *Criar uma conta* abre a tela que
+manda `POST /usuarios/`, desta vez com os dados **em JSON**, e espera `201`.
+Deu certo, o service entra com a conta nova pelo mesmo caminho do login e o app
+abre a tela inicial. Quando a API recusa, a tela mostra o motivo: `409` vira
+*Já existe uma conta com este e-mail*, e `422` vira `campo: mensagem` do
+primeiro erro que a API listou. A primeira conta, aliás, é a que recebe os cinco
+livros de exemplo.
 
 A **navegação é por nome**: `lib/routes.dart` guarda o nome de cada tela
 (`AppRoutes.login`, `inicio`, `livros`, `perfil`), o `main.dart` liga cada nome
@@ -96,14 +103,23 @@ A **sessão** (`SessaoService`) é um `ChangeNotifier`: chama `notifyListeners()
 quando muda e fica no topo do app, num `ChangeNotifierProvider`. As telas a leem
 com `context.read` (para chamar) e `context.watch` (para mostrar), e nenhuma a
 recebe pelo construtor. O menu lateral (`widgets/app_drawer.dart`) mostra o nome
-de quem entrou e tem o Sair, que apaga a sessão e limpa a pilha. O token vive só
-na memória: recarregar a página sai do app (guardá-lo no aparelho é o próximo
-passo). A tela de livros é um lugar reservado; a listagem chega adiante.
+de quem entrou e tem o Sair, que apaga a sessão e limpa a pilha. A tela de livros
+é um lugar reservado; a listagem chega adiante.
+
+A **sessão fica guardada no aparelho**: o `TokenRepository`, com o pacote
+`shared_preferences` (no navegador, o `localStorage` do Chrome), é o único que
+sabe onde o token mora. Entrar e cadastrar o guardam; ao abrir, o `main` chama
+`restaurar()` antes da primeira tela, e se o token ainda vale (`GET
+/usuarios/eu`) o app abre logado; um token que a API recusa é apagado, e o Sair
+também o apaga. Recarregar a página (F5), ou o `r` e o `R` do terminal do
+`flutter run`, já não derruba a sessão. Os detalhes estão no
+[`frontend/README.md`](frontend/README.md).
 
 A API deixa o app entrar por causa do **CORS**, no `app/main.py`: o app roda
 noutra porta, e o navegador só o deixa falar com a API porque ela autoriza
-as portas desta máquina. A prova do app são os testes, com uma API de
-mentira (`MockClient`), sem precisar do uvicorn:
+as portas desta máquina — inclusive para o `POST` em JSON do cadastro, que o
+navegador pergunta antes (`OPTIONS`). A prova do app são os 22 testes, com uma
+API de mentira (`MockClient`) e um aparelho de mentira, sem precisar do uvicorn:
 
 ```
 cd frontend
@@ -124,6 +140,7 @@ primeira pessoa**, e é no seu acervo que os cinco livros de exemplo nascem:
 | `GET /livros/` sem token | `401` | a porta está trancada |
 | `POST /usuarios/ {"nome": "Ana", "email": "ana@ifg.edu.br", "senha": "segredo1"}` | `201` | e a resposta **não** traz a senha |
 | o mesmo `POST` de novo | `409` | **RN04** — um e-mail, uma conta |
+| `POST /usuarios/` com `"email": "abc"` (ou uma senha de 3 letras) | `422` | o **schema** barrou — e é este `detail`, em lista, que o app mostra |
 | `POST /usuarios/login` com a senha errada | `401` | e-mail ou senha incorretos — sem dizer qual |
 | **Authorize** no `/docs` (e-mail e senha) | o cadeado fecha | o crachá vai em toda chamada |
 | `GET /usuarios/eu` | quem você é | só com token |
@@ -427,7 +444,16 @@ migrações. Nenhum arquivo dentro de `app/` muda.
   a Ana e para o Bruno. Separar os leitores por biblioteca seria a próxima
   coluna — e não é a desta aula.
 - O token vale por 60 minutos e não há "sair": logout, em JWT, é o token
-  vencer (ou o cliente jogá-lo fora).
+  vencer (ou o cliente jogá-lo fora — é o que o **Sair** do app faz).
+- No app, o token fica no `localStorage` do navegador: qualquer script que rode
+  naquela página o lê. Para a aula serve; num produto de verdade o cuidado é
+  outro (um cookie `HttpOnly`, ou o armazenamento seguro do celular). A sessão
+  sobrevive ao F5, ao `r` e ao `R`, mas **não** a um novo `flutter run`: a porta
+  do app muda a cada execução, e o `localStorage` é de cada endereço. Passou os
+  60 minutos, a API devolve `401`, o app apaga o token e abre no login.
+- O `422` do cadastro chega em inglês (a mensagem padrão do Pydantic, como em
+  *String should have at least 6 characters*): só o cadastro de livros teve os
+  validadores traduzidos. O app mostra o que a API mandou.
 - O cadastro é aberto (auto-cadastro). Num sistema em que só um
   administrador cria contas, `POST /usuarios/` também vai atrás do porteiro,
   com uma checagem de papel — e a primeira conta nasce por uma migração de
