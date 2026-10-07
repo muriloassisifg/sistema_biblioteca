@@ -218,6 +218,43 @@ cliente de banco (`UPDATE emprestimos SET devolver_ate = date('now', '-6
 days') WHERE id = 1`) e devolva: `dias_de_atraso` 6 e `multa` 15.0. Os
 `tests/test_devolucao_api.py` fazem isso sozinhos.
 
+### O relatório de atrasos — P3 (a refatoração)
+
+O encontro 10 de P3 foi sobre **refatorar**: arrumar o código por dentro sem
+mudar o que ele faz. O exemplo é o relatório de atrasos
+(`app/emprestimos/relatorio.py`), que nasceu "escrito com pressa" — nomes de
+uma letra, a multa calculada de novo, uma escada de `if` por tipo de leitor — e
+foi arrumado em **cinco passos pequenos, um commit `refactor:` em cada**. O
+que garante que nada mudou são os `tests/test_relatorio.py`, os testes de
+**caracterização**: eles travam a saída *como ela é*, e **não mudaram uma
+linha** entre o primeiro commit e o último. Veja a história:
+
+```
+git log --oneline -- app/emprestimos/relatorio.py
+```
+
+| commit | o cheiro | o movimento |
+|---|---|---|
+| `refactor: nomes que dizem o que fazem` | nome que não diz o que faz | renomear |
+| `refactor: a multa vem do MultaService` | código duplicado, números mágicos (2.5 e 50) | chamar quem já sabe |
+| `refactor: constantes no lugar dos numeros soltos` | números mágicos (30 e 7) | extrair constante |
+| `refactor: o relatorio em funcoes pequenas` | função longa, mais de um motivo para mudar | extrair funções |
+| `refactor: a escada de contatos vira dicionario` | escada de `if` por tipo | tabela (dicionário) |
+
+Para ver o relatório na tela (ele lê o `biblioteca.db` do `.env`):
+
+```
+python ver_relatorio.py             # o relatório de hoje
+python ver_relatorio.py saida.txt   # mostra e guarda também no arquivo
+```
+
+Sem esperar o prazo passar: `UPDATE emprestimos SET devolver_ate =
+date('now', '-6 days') WHERE id = 1` no cliente de banco, como na devolução. A
+multa **não** é calculada no relatório: ele pede ao `MultaService`, que lê o
+`multa.json` — a mesma conta da devolução (`obter_multas`, no
+`dependencias.py`). **Não há rota para o relatório**, de propósito: ele é da
+biblioteca inteira, e as rotas daqui enxergam só o acervo de quem está logado.
+
 ### Onde as duas turmas se encontram
 
 Depois do primeiro `POST /emprestimos/`: `GET /livros/1` mostra
@@ -238,6 +275,7 @@ alembic/
     ├── 1ee353fc967a_…     a primeira: livros, emprestimos e usuarios
     ├── df904534ea10_…     a segunda: tipo_leitor e devolver_ate em emprestimos (P3, encontro 7)
     └── 79cbc6acad0d_…     a terceira: dono_id em livros (Web III, encontro 7)
+ver_relatorio.py           mostra o relatório de atrasos na tela (P3, encontro 10)
 app/
 ├── database.py            conexão, sessão, Base e get_db — do projeto INTEIRO
 ├── seguranca.py           hash da senha, token JWT e get_current_user — do projeto INTEIRO
@@ -270,7 +308,8 @@ app/
     ├── notificador.py     avisa o leitor (aqui, uma linha no terminal do servidor)
     ├── historico.py       uma linha por devolução, no devolucoes.txt
     ├── devolucao.py       DevolucaoFacade: a fachada, uma chamada só para as quatro peças da devolução
-    ├── dependencias.py    escolhe qual repositório o Service recebe, com qual dono, e monta a fachada
+    ├── relatorio.py       o relatório de atrasos, refatorado em funções pequenas (P3, encontro 10)
+    ├── dependencias.py    escolhe qual repositório o Service recebe, com qual dono, e monta a fachada e a MultaService
     └── controller.py      as rotas: emprestar (direto ao Service) e devolver (pela fachada)
 tests/                     as tabelas acima, rodando sozinhas (pytest)
 ```
@@ -338,6 +377,8 @@ lista, `404` no livro da Ana, `404` ao tentar emprestá-lo).
 `test_migracoes.py` roda o `alembic upgrade head` de verdade num banco vazio
 e confere que o esquema é o mesmo dos models — e passa dois bancos antigos,
 com dados dentro, pela migração seguinte, na subida e na descida.
+`test_relatorio.py` trava a saída exata do relatório de atrasos, com uma data
+fixa (7/10/2026), para não depender do dia em que roda.
 
 ## PostgreSQL
 
@@ -357,7 +398,15 @@ migrações. Nenhum arquivo dentro de `app/` muda.
   e-mail e uma tabela. O totem de autoatendimento da aula fica só no material da aula: aqui ele precisaria
   de uma sessão e de quem está logado.
 - Os empréstimos de antes da migração do Strategy não têm data de devolução (a coluna é nula), e por isso
-  a `MultaService` os trata como sem atraso.
+  a `MultaService` os trata como sem atraso — e o relatório de atrasos nem os lista: é a única linha em que
+  o `relatorio.py` difere do material da aula (`AND e.devolver_ate IS NOT NULL` no SQL). Sem ela, o
+  relatório caía com `TypeError` num banco com empréstimo antigo.
+- O relatório de atrasos lê o banco com `sqlite3`, direto, pelo caminho do arquivo — como no material. Roda
+  no SQLite do `.env`; com PostgreSQL não. Ele também é da biblioteca **inteira**, de todos os acervos
+  (por isso é um script, e não uma rota). O `pytest.ini` e o `atrasado.py` do material não vieram: o
+  pytest já é configurado no `pyproject.toml`, e o prazo se empurra com um `UPDATE`, como na devolução.
+- O primeiro commit do relatório (`O relatorio de atrasos, escrito com pressa…`) é feio de propósito: é o
+  "antes" da refatoração, e os cinco `refactor:` que vêm depois são o "depois", passo a passo.
 - O `db` atravessa o service de livros e de usuários. Não é o desenho mais
   puro possível; `emprestimos/` mostra o passo seguinte.
 - O acervo inicial de brinde para quem se cadastra primeiro resolve para a
