@@ -2,6 +2,3 @@
 *.db
 __pycache__/
 .venv/
-.pytest_cache/
-devolucoes.txt
-saida.txt
