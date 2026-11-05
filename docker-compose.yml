@@ -1,0 +1,60 @@
+# O sistema inteiro numa VPS: o banco, a API, o app e o porteiro (o Caddy).
+# Fica na raiz do repositório, ao lado de backend/ e frontend/.
+# Os valores vêm do arquivo .env, ao lado deste, que NÃO vai para o Git.
+
+services:
+  banco:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # Os dados moram no volume: sobrevivem quando o contêiner é recriado.
+      - dados_do_banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      # "banco" é o nome do serviço acima: dentro do Compose, ele vira o endereço.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@banco:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+    depends_on:
+      banco:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ./frontend
+      args:
+        API_URL: ${ENDERECO_PUBLICO}/api
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # O único que fica aberto para a internet. Ele recebe todo pedido e passa
+  # para o app ou para a API. Com um domínio, ele também cuida do HTTPS.
+  porteiro:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - dados_do_caddy:/data
+    depends_on:
+      - app
+
+volumes:
+  dados_do_banco:
+  dados_do_caddy:

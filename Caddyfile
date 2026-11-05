@@ -1,0 +1,15 @@
+# O porteiro: quem pede /api vai para a API, e o resto vai para o app.
+{$DOMINIO} {
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+	handle /docs {
+		reverse_proxy api:8000
+	}
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy app:80
+	}
+}
