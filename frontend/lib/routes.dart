@@ -5,5 +5,7 @@ class AppRoutes {
   static const cadastro = '/cadastro';
   static const inicio = '/inicio';
   static const livros = '/livros';
+  static const livro = '/livro'; // o detalhe de UM livro
+  static const formulario = '/formulario'; // criar ou editar um livro
   static const perfil = '/perfil';
 }
