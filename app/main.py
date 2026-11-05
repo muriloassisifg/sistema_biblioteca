@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -56,9 +57,11 @@ app = FastAPI(title="Biblioteca do Campus", version="0.6.0", lifespan=ciclo_de_v
 
 # O app Flutter roda no navegador, noutro endereco (a porta muda a cada
 # `flutter run`). O navegador so' deixa uma pagina falar com outro endereco
-# se a API disser que deixa: e' o CORS. Aqui: qualquer porta desta maquina.
+# se a API disser que deixa: e' o CORS. Aqui: qualquer porta desta maquina e,
+# na nuvem, o endereco do app, que vem da variavel ENDERECO_DO_APP.
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=[os.getenv("ENDERECO_DO_APP", "")],
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
